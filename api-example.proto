@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+service FileService {
+  rpc GetInfo (FileInfoRequest) returns (FileInfoResponse) {}
+
+  rpc ListChildren (ListChildrenRequest) returns (stream FileInfo) {}
+
+  rpc CreateEmptyFile (CreateEmptyFileRequest) returns (CreateEmptyFileResponse) {}
+
+  rpc CreateEmptyDir (CreateEmptyDirRequest) returns (CreateEmptyDirResponse) {}
+
+  rpc Delete (DeleteRequest) returns (DeleteResponse) {}
+
+  rpc Move (MoveRequest) returns (MoveResponse) {}
+
+  rpc Copy (CopyRequest) returns (CopyResponse) {}
+
+  rpc Append (AppendRequest) returns (AppendResponse) {}
+
+  rpc Read (ReadRequest) returns (stream ReadChunk) {}
+}
+
+//------------------ info ------------------
+
+message FileInfoRequest {
+  string path = 1;
+}
+
+message FileInfoResponse {
+  FileInfo info = 1;
+}
+
+//------------------ list -------------------
+
+message ListChildrenRequest {
+  string path = 1;
+}
+
+//------------------ create file ------------
+
+message CreateEmptyFileRequest {
+  string path = 1;
+}
+
+message CreateEmptyFileResponse {
+  FileInfo info = 1;
+}
+
+//------------------ create dir --------------
+
+message CreateEmptyDirRequest {
+  string path = 1;
+}
+
+message CreateEmptyDirResponse {
+  FileInfo info = 1;
+}
+
+//------------------ delete ------------------
+
+message DeleteRequest {
+  string path = 1;
+}
+
+message DeleteResponse {
+}
+
+//------------------ move --------------------
+
+message MoveRequest {
+  string srcPath = 1;
+  string dstPath = 2;
+}
+
+message MoveResponse {
+}
+
+//------------------ copy --------------------
+
+message CopyRequest {
+  string srcPath = 1;
+  string dstPath = 2;
+}
+
+message CopyResponse {
+}
+
+//------------------ append ------------------
+
+message AppendRequest {
+  string path = 1;
+  bytes content = 2;
+}
+
+message AppendResponse {
+}
+
+//------------------ read --------------------
+
+message ReadRequest {
+  string path = 1;
+  int64 offset = 2;
+  int64 length = 3;
+}
+
+message ReadChunk {
+  bytes content = 1;
+}
+
+//------------------ common ------------------
+
+message FileInfo {
+  string name = 1;
+  string path = 2;
+  int64 size = 3;
+}
