@@ -1,0 +1,9 @@
+micronaut:
+  application:
+    name: fileService
+netty:
+  default:
+    allocator:
+      max-order: 3
+app:
+  rootDir: /tmp
