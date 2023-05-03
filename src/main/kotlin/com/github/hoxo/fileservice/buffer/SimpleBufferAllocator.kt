@@ -1,16 +1,17 @@
 package com.github.hoxo.fileservice.buffer
 
+import com.github.hoxo.fileservice.Config
+import io.micronaut.context.annotation.Requires
 import jakarta.inject.Singleton
 import java.nio.ByteBuffer
 
+@Requires(property = "app.simple-allocator.enabled", value = "true")
 @Singleton
-class SimpleBufferAllocator: BufferAllocator {
-    override suspend fun allocate(size: Int): ByteBuffer {
-        return ByteBuffer.allocate(size)
-    }
-
-    override suspend fun <T> borrow(size: Int, f: suspend (ByteBuffer) -> T): T {
-        val buffer = allocate(size)
+class SimpleBufferAllocator(
+    private val config: Config.SimpleAllocator
+): BufferAllocator {
+    override suspend fun <T> borrow(f: suspend (ByteBuffer) -> T): T {
+        val buffer = ByteBuffer.allocate(config.bufferSize)
         return f(buffer)
     }
 }

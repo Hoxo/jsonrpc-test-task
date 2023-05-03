@@ -25,6 +25,7 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
     implementation("ch.qos.logback:logback-classic")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
 }
 
 application {

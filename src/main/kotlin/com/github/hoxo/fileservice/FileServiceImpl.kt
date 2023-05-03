@@ -1,18 +1,20 @@
 package com.github.hoxo.fileservice
 
 import com.github.hoxo.fileservice.buffer.BufferAllocator
-import io.micronaut.context.annotation.Value
+import com.github.hoxo.fileservice.buffer.escapePath
 import jakarta.inject.Singleton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.asFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import java.nio.channels.AsynchronousFileChannel
-import java.nio.channels.CompletionHandler
-import java.nio.file.*
+import java.nio.channels.FileChannel
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
+import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlin.coroutines.suspendCoroutine
 import kotlin.io.path.fileSize
 import kotlin.io.path.name
 import kotlin.io.path.relativeTo
@@ -20,17 +22,11 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.streams.asSequence
 
-//todo escape path before action
 @Singleton
 class FileServiceImpl(
     private val bufferAllocator: BufferAllocator,
-    @Value("\${app.rootDir}")
-    private val rootDir: String,
-    @Value("\${app.bufferSizeMB}")
-    private val bufferSizeMB: Int,
+    private val config: Config,
 ): FileService {
-    private val rootPath = Paths.get(rootDir)
-    private val maxBufferSize = bufferSizeMB * 1024 * 1024
 
     override suspend fun getInfo(path: String): Result<FileInfo> = withContext(Dispatchers.IO) {
         val escapedPath = escapePath(path)
@@ -54,49 +50,55 @@ class FileServiceImpl(
         }
     }
 
-    override suspend fun readFile(path: String,
-                                  offset: Long,
-                                  toRead: Long): Result<ByteArray> = withContext(Dispatchers.IO) {
+    override suspend fun readFile(
+        path: String,
+        offset: Int,
+        toRead: Int
+    ): Result<ByteArray> = withContext(Dispatchers.IO) {
         if (offset <= 0) {
             return@withContext Result.failure(IllegalArgumentException("offset must be positive"))
         }
         if (toRead <= 0) {
             return@withContext Result.failure(IllegalArgumentException("toRead must be positive"))
         }
-        if (toRead > maxBufferSize) {
-            return@withContext Result.failure(IllegalArgumentException("toRead must be less than $maxBufferSize bytes"))
+        if (toRead > config.maxFileChunkSize) {
+            return@withContext Result.failure(
+                IllegalArgumentException("toRead must be less than ${config.maxFileChunkSize} bytes"))
         }
 
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
         runCatching {
             val fileSize = fullPath.fileSize()
-            val expectedToRead = min(max(fileSize - offset, 0), toRead)
-            if (expectedToRead == 0L) {
+            val expectedToRead = min(max(fileSize - offset, 0), toRead.toLong()).toInt()
+            if (expectedToRead == 0) {
                 return@runCatching ByteArray(0)
             }
             //todo understand, how to read file, which is bigger than memory
             //todo use buffer pool or limiting
-            bufferAllocator.borrow(expectedToRead.toInt()) { buffer -> //todo toInt is not good; possible OOM
-                suspendCoroutine { cont ->
-                    AsynchronousFileChannel.open(fullPath, StandardOpenOption.READ).use { channel ->
-                        channel.read(buffer, offset, null, object : CompletionHandler<Int, Unit?> {
-                            override fun completed(result: Int, attachment: Unit?) {
-                                if (result == -1) {
-                                    cont.resume(ByteArray(0))
-                                    return
-                                }
-                                cont.resume(buffer.array().copyOf(result))
+            val result = ByteArray(expectedToRead)
+            bufferAllocator.borrow { buffer ->
+                withContext(Dispatchers.IO) {
+                    FileChannel.open(fullPath, StandardOpenOption.READ).use { channel ->
+                        var position = 0
+                        while (true) {
+                            val read = channel.read(buffer, offset.toLong())
+                            if (read == -1) {
+                                break
                             }
-
-                            override fun failed(exc: Throwable, attachment: Unit?) {
-                                cont.resumeWithException(exc)
+                            val remaining = min(expectedToRead - position, read)
+                            if (remaining == 0) {
+                                break
                             }
-                        })
+                            buffer.flip()
+                            buffer.get(result, position, remaining)
+                            position += read
+                            buffer.clear()
+                        }
                     }
-
                 }
             }
+            return@runCatching result
         }
     }
 
@@ -154,12 +156,5 @@ class FileServiceImpl(
         }
     }
 
-    private fun absolutePathFromRoot(path: String): Path = Paths.get(rootDir, path)
-
-    private fun escapePath(path: String): String {
-        return Path.of(path).normalize()
-            .toString()
-            .replace("..", "")
-            .replace("//", "/")
-    }
+    private fun absolutePathFromRoot(path: String): Path = Paths.get(config.rootDir, path)
 }

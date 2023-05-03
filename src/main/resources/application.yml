@@ -6,5 +6,12 @@ netty:
     allocator:
       max-order: 3
 app:
-  rootDir: /tmp
-  bufferSizeMB: 100
+  root-dir: /tmp/test
+  buffer-pool:
+    enabled: false
+    size: 1024
+    buffer-size: 8192
+  max-file-chunk-size: 1048576
+  simple-allocator:
+    enabled: true
+    buffer-size: 8192

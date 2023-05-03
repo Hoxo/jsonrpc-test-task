@@ -1,4 +1,4 @@
-package com.github.hoxo
+package com.github.hoxo.fileservice
 
 import io.micronaut.runtime.Micronaut.run
 import org.slf4j.LoggerFactory
