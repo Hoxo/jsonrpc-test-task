@@ -1,15 +1,16 @@
 package com.github.hoxo.fileservice
 
-import io.micronaut.runtime.Micronaut.run
+import io.micronaut.runtime.Micronaut.build
 import org.slf4j.LoggerFactory
 
 private val LOG = LoggerFactory.getLogger("app")
 
 fun main(args: Array<String>) {
-    val ctx = run(*args)
+    build(*args)
+        .eagerInitSingletons(true)
+        .start()
     Runtime.getRuntime().addShutdownHook(Thread {
         LOG.info("Shutting down application")
-        ctx.close()
     })
 }
 

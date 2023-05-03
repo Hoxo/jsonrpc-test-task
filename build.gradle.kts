@@ -25,6 +25,11 @@ dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
     implementation("ch.qos.logback:logback-classic")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    //json rpc part
+    implementation("com.github.briandilley.jsonrpc4j:jsonrpc4j:1.6")
+    runtimeOnly("javax.servlet:servlet-api:2.5")
+    runtimeOnly("javax.portlet:portlet-api:3.0.1")
+
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
 }
 

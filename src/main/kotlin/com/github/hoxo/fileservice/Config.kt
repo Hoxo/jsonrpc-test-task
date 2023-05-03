@@ -10,14 +10,14 @@ data class Config(
 
     @ConfigurationProperties("buffer-pool")
     data class BufferPool(
-        var enabled: Boolean,
+        var enabled: Boolean = false,
         var size: Int = 100,
         var bufferSize: Int = 1024
     )
 
     @ConfigurationProperties("simple-allocator")
     data class SimpleAllocator(
-        var enabled: Boolean,
+        var enabled: Boolean = false,
         var bufferSize: Int = 8192
     )
 }

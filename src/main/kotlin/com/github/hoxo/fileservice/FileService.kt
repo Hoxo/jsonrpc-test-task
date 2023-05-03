@@ -1,5 +1,6 @@
 package com.github.hoxo.fileservice
 
+import com.github.hoxo.fileservice.model.FileInfo
 import kotlinx.coroutines.flow.Flow
 import java.nio.file.Path
 

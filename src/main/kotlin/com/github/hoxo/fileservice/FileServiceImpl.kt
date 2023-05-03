@@ -2,6 +2,7 @@ package com.github.hoxo.fileservice
 
 import com.github.hoxo.fileservice.buffer.BufferAllocator
 import com.github.hoxo.fileservice.buffer.escapePath
+import com.github.hoxo.fileservice.model.FileInfo
 import jakarta.inject.Singleton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -17,6 +18,7 @@ import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
 import kotlin.io.path.fileSize
 import kotlin.io.path.name
+import kotlin.io.path.readAttributes
 import kotlin.io.path.relativeTo
 import kotlin.math.max
 import kotlin.math.min
@@ -32,8 +34,8 @@ class FileServiceImpl(
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
         runCatching {
-            val fileSize = fullPath.fileSize()
-            FileInfo(fullPath.name, escapedPath, fileSize)
+            val attr = fullPath.readAttributes<BasicFileAttributes>()
+            FileInfo(fullPath.name, escapedPath, attr.size(), attr.isDirectory)
         }
     }
 
@@ -41,11 +43,11 @@ class FileServiceImpl(
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
         runCatching {
-            Files.walk(fullPath, 1)
+            Files.list(fullPath)
                 .asSequence()
                 .asFlow()
                 .map { it to Files.readAttributes(it, BasicFileAttributes::class.java) }
-                .map { (p, a) -> FileInfo(p.name, p.relativeTo(fullPath).toString(), a.size()) }
+                .map { (p, a) -> FileInfo(p.name, p.relativeTo(fullPath).toString(), a.size(), a.isDirectory) }
                 .flowOn(Dispatchers.IO)
         }
     }
@@ -55,8 +57,8 @@ class FileServiceImpl(
         offset: Int,
         toRead: Int
     ): Result<ByteArray> = withContext(Dispatchers.IO) {
-        if (offset <= 0) {
-            return@withContext Result.failure(IllegalArgumentException("offset must be positive"))
+        if (offset < 0) {
+            return@withContext Result.failure(IllegalArgumentException("offset must be non-negative"))
         }
         if (toRead <= 0) {
             return@withContext Result.failure(IllegalArgumentException("toRead must be positive"))
@@ -107,7 +109,7 @@ class FileServiceImpl(
         val fullPath = absolutePathFromRoot(escapedPath)
         runCatching {
             Files.createFile(fullPath)
-            FileInfo(fullPath.name, escapedPath, 0)
+            FileInfo(fullPath.name, escapedPath, 0, false)
         }
     }
 
@@ -116,7 +118,7 @@ class FileServiceImpl(
         val fullPath = absolutePathFromRoot(escapedPath)
         runCatching {
             Files.createDirectory(fullPath)
-            FileInfo(fullPath.name, escapedPath, 0)
+            FileInfo(fullPath.name, escapedPath, 0, true)
         }
     }
 
