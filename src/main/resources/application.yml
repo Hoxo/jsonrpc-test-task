@@ -7,3 +7,4 @@ netty:
       max-order: 3
 app:
   rootDir: /tmp
+  bufferSizeMB: 100
