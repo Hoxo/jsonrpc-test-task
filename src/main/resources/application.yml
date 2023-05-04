@@ -1,6 +1,8 @@
 micronaut:
   application:
     name: fileService
+  server:
+    max-request-size: 10485760
 netty:
   default:
     allocator:
