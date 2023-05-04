@@ -1,6 +1,7 @@
 package com.github.hoxo.fileservice.jsonrpc
 
 import com.github.hoxo.fileservice.FileService
+import com.github.hoxo.fileservice.dto.FileChunkDto
 import com.github.hoxo.fileservice.dto.FileInfoDto
 import com.github.hoxo.fileservice.dto.toDto
 import com.googlecode.jsonrpc4j.*
@@ -36,13 +37,19 @@ class JsonRpcFileService(
     @JsonRpcMethod("readFile")
     fun readFile(
         @JsonRpcParam("path") path: String,
-        @JsonRpcParam("offset") offset: Int,
+        @JsonRpcParam("offset") offset: Long,
         @JsonRpcParam("toRead") toRead: Int
-    ): String {
+    ): FileChunkDto {
         val content = runBlocking(Dispatchers.Default) {
             fileService.readFile(path, offset, toRead).getOrThrow()
         }
-        return base64Encoder.encodeToString(content)
+        return FileChunkDto(
+            info = content.info.toDto(),
+            offset = content.offset,
+            size = content.size,
+            data = base64Encoder.encodeToString(content.data),
+            hasRemainingData = content.hasRemainingData,
+        )
     }
 
     @JsonRpcMethod("createEmptyFile")
