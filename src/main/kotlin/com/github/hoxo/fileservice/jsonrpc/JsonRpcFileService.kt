@@ -83,7 +83,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.move(path, newPath)
         }
-        return result.getOrThrow().toString()
+        return result.getOrThrow()
     }
 
     @JsonRpcMethod("copy")
@@ -94,7 +94,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.copy(path, newPath)
         }
-        return result.getOrThrow().toString()
+        return result.getOrThrow()
     }
 
 
@@ -106,7 +106,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.append(path, base64Decoder.decode(data))
         }
-        return result.getOrThrow().toString()
+        return result.getOrThrow()
     }
 
 }

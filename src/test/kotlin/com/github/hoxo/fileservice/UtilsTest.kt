@@ -10,18 +10,21 @@ class UtilsTest {
     companion object {
         @JvmStatic
         fun escapePathTestCases() = listOf(
-            Arguments.of("", ""),
-            Arguments.of("a", "a"),
-            Arguments.of("a/b/c", "a/b/c"),
+            Arguments.of("", "/"),
+            Arguments.of(".", "/"),
+            Arguments.of("a", "/a"),
+            Arguments.of("a/b/c", "/a/b/c"),
             Arguments.of("/a/b/c", "/a/b/c"),
             Arguments.of("/a/b/../c", "/a/c"),
             Arguments.of("/a/b/../../c", "/c"),
             Arguments.of("/a/b/../../c/..", "/"),
-            Arguments.of("a/..", ""),
-            Arguments.of("a/../..", ""),
-            Arguments.of("a/../../", ""),
-            Arguments.of("./././././.", ""),
+            Arguments.of("a/..", "/"),
+            Arguments.of("a/../..", "/"),
+            Arguments.of("a/../../", "/"),
+            Arguments.of("./././././.", "/"),
             Arguments.of("/././././././", "/"),
+            Arguments.of("/../../../../../", "/"),
+            Arguments.of("../../../../../../", "/"),
         )
     }
 

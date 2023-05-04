@@ -17,9 +17,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.nio.file.attribute.BasicFileAttributes
-import kotlin.io.path.name
-import kotlin.io.path.readAttributes
-import kotlin.io.path.relativeTo
+import kotlin.io.path.*
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.streams.asSequence
@@ -29,13 +27,26 @@ class FileServiceImpl(
     private val bufferAllocator: BufferAllocator,
     private val config: Config,
 ): FileService {
+    private val rootPath = Path.of(config.rootDir)
+
+    init {
+        if (!rootPath.isDirectory()) {
+            throw IllegalArgumentException("Root dir ${config.rootDir} is not a directory")
+        }
+    }
 
     override suspend fun getInfo(path: String): Result<FileInfo> = withContext(Dispatchers.IO) {
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
+
+        val (fileName, filePath) = if (isRoot(fullPath)) {
+            "" to "/"
+        } else {
+            fullPath.name to escapedPath
+        }
         runCatching {
             val attr = fullPath.readAttributes<BasicFileAttributes>()
-            FileInfo(fullPath.name, escapedPath, attr.size(), attr.isDirectory)
+            FileInfo(fileName, filePath, attr.size(), attr.isDirectory)
         }
     }
 
@@ -47,7 +58,7 @@ class FileServiceImpl(
                 .asSequence()
                 .asFlow()
                 .map { it to Files.readAttributes(it, BasicFileAttributes::class.java) }
-                .map { (p, a) -> FileInfo(p.name, p.relativeTo(fullPath).toString(), a.size(), a.isDirectory) }
+                .map { (p, a) -> FileInfo(p.name, "/" + p.relativeTo(fullPath).toString(), a.size(), a.isDirectory) }
                 .flowOn(Dispatchers.IO)
         }
     }
@@ -126,7 +137,8 @@ class FileServiceImpl(
         val fullPath = absolutePathFromRoot(escapedPath)
         runCatching {
             Files.createDirectory(fullPath)
-            FileInfo(fullPath.name, escapedPath, 0, true)
+            val fileSize = fullPath.fileSize()
+            FileInfo(fullPath.name, escapedPath, fileSize, true)
         }
     }
 
@@ -138,33 +150,38 @@ class FileServiceImpl(
         }
     }
 
-    override suspend fun move(path: String, newPath: String): Result<Path> = withContext(Dispatchers.IO) {
+    override suspend fun move(path: String, newPath: String): Result<String> = withContext(Dispatchers.IO) {
         val escapedPath = escapePath(path)
         val escapedNewPath = escapePath(newPath)
         val fullPath = absolutePathFromRoot(escapedPath)
         val newFullPath = absolutePathFromRoot(escapedNewPath)
         return@withContext runCatching {
             Files.move(fullPath, newFullPath)
+            escapedNewPath
         }
     }
 
-    override suspend fun copy(path: String, newPath: String): Result<Path> = withContext(Dispatchers.IO) {
+    override suspend fun copy(path: String, newPath: String): Result<String> = withContext(Dispatchers.IO) {
         val escapedPath = escapePath(path)
         val escapedNewPath = escapePath(newPath)
         val fullPath = absolutePathFromRoot(escapedPath)
         val newFullPath = absolutePathFromRoot(escapedNewPath)
         return@withContext runCatching {
             Files.copy(fullPath, newFullPath)
+            escapedNewPath
         }
     }
 
-    override suspend fun append(path: String, data: ByteArray): Result<Path> = withContext(Dispatchers.IO) {
+    override suspend fun append(path: String, data: ByteArray): Result<String> = withContext(Dispatchers.IO) {
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
         return@withContext runCatching {
             Files.write(fullPath, data, StandardOpenOption.APPEND)
+            escapedPath
         }
     }
 
     private fun absolutePathFromRoot(path: String): Path = Paths.get(config.rootDir, path)
+
+    private fun isRoot(path: Path): Boolean = path == rootPath
 }

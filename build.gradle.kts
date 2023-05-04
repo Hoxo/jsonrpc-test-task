@@ -31,6 +31,7 @@ dependencies {
     runtimeOnly("javax.portlet:portlet-api:3.0.1")
 
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
+    testImplementation("org.mockito:mockito-core:5.3.1")
 }
 
 application {
