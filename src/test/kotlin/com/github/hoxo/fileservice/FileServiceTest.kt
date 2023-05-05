@@ -252,4 +252,175 @@ class FileServiceTest {
         assertTrue(testDir.exists())
         assertTrue(testFile.exists())
     }
+
+    @Test
+    fun `move should work with file`(): Unit = runBlocking {
+        rootDir.resolve("test").createFile()
+        val moveR = fileService.move("test", "test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+        assertTrue(rootDir.resolve("test2").exists())
+        assertTrue(rootDir.resolve("test").notExists())
+    }
+
+    @Test
+    fun `move should work with dir`(): Unit = runBlocking {
+        rootDir.resolve("test").createDirectory()
+        val moveR = fileService.move("test", "test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+        assertTrue(rootDir.resolve("test2").exists())
+        assertTrue(rootDir.resolve("test").notExists())
+    }
+
+    @Test
+    fun `move should transfer dir with its content`(): Unit = runBlocking {
+        val dir = rootDir.resolve("test").createDirectory()
+        dir.resolve("testFile").createFile()
+        val moveR = fileService.move("test", "test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+        val newDir = rootDir.resolve("test2")
+        assertTrue(newDir.exists())
+        assertTrue(newDir.resolve("testFile").exists())
+        assertTrue(dir.notExists())
+    }
+
+    @MethodSource("rootRoutes")
+    @ParameterizedTest
+    fun `move cannot move root dir`(root: String): Unit = runBlocking {
+        val moveR = fileService.move(root, "test")
+        assertTrue(moveR.isFailure)
+        assertEquals("Cannot move root dir", moveR.exceptionOrNull()!!.message)
+    }
+
+    @MethodSource("rootRoutes")
+    @ParameterizedTest
+    fun `move cannot move to root dir`(root: String): Unit = runBlocking {
+        val testDir = rootDir.resolve("test").createDirectory()
+        testDir.resolve("testFile").createFile()
+        val moveR = fileService.move("test", root)
+        assertTrue(moveR.isFailure)
+        assertEquals("Cannot move to root dir", moveR.exceptionOrNull()!!.message)
+    }
+
+    @Test
+    fun `move cannot move outside file to root dir`(): Unit = runBlocking {
+        val tempFile = createTempFile("test")
+        val tempFilePath = tempFile.relativeTo(rootDir).toString()
+        val moveR = fileService.move(tempFilePath, "/test")
+        assertTrue(moveR.isFailure)
+        assertEquals(NoSuchFileException::class, moveR.exceptionOrNull()!!::class)
+    }
+
+    @MethodSource("parentRoutes")
+    @ParameterizedTest
+    fun `move cannot move file to outside dir`(parent: String): Unit = runBlocking {
+        rootDir.resolve("test").createFile()
+        val moveR = fileService.move("test", "$parent/test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+    }
+
+    @Test
+    fun `move cannot move unknown file`(): Unit = runBlocking {
+        val moveR = fileService.move("unknown", "test")
+        assertTrue(moveR.isFailure)
+        assertEquals(NoSuchFileException::class, moveR.exceptionOrNull()!!::class)
+    }
+
+    @Test
+    fun `copy should work with file`(): Unit = runBlocking {
+        rootDir.resolve("test").createFile()
+        val moveR = fileService.copy("test", "test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+        assertTrue(rootDir.resolve("test2").exists())
+        assertTrue(rootDir.resolve("test").exists())
+    }
+
+    @Test
+    fun `copy should work with dir`(): Unit = runBlocking {
+        rootDir.resolve("test").createDirectory()
+        val moveR = fileService.copy("test", "test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+        assertTrue(rootDir.resolve("test2").exists())
+        assertTrue(rootDir.resolve("test").exists())
+    }
+
+    @Test
+    fun `copy should copy dir with its content`(): Unit = runBlocking {
+        val dir = rootDir.resolve("test").createDirectory()
+        dir.resolve("testFile").createFile()
+        val moveR = fileService.copy("test", "test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+        val newDir = rootDir.resolve("test2")
+        assertTrue(newDir.exists())
+        assertTrue(newDir.resolve("testFile").exists())
+        assertTrue(dir.exists())
+    }
+
+    @MethodSource("rootRoutes")
+    @ParameterizedTest
+    fun `copy cannot copy root dir`(root: String): Unit = runBlocking {
+        val moveR = fileService.move(root, "test")
+        assertTrue(moveR.isFailure)
+        assertEquals("Cannot move root dir", moveR.exceptionOrNull()!!.message)
+    }
+
+    @MethodSource("rootRoutes")
+    @ParameterizedTest
+    fun `copy cannot copy to root dir`(root: String): Unit = runBlocking {
+        val testDir = rootDir.resolve("test").createDirectory()
+        testDir.resolve("testFile").createFile()
+        val moveR = fileService.copy("test", root)
+        assertTrue(moveR.isFailure)
+        assertEquals("Cannot copy to root dir", moveR.exceptionOrNull()!!.message)
+    }
+
+    @Test
+    fun `copy cannot copy outside file to root dir`(): Unit = runBlocking {
+        val tempFile = createTempFile("test")
+        val tempFilePath = tempFile.relativeTo(rootDir).toString()
+        val moveR = fileService.copy(tempFilePath, "/test")
+        assertTrue(moveR.isFailure)
+        assertEquals(NoSuchFileException::class, moveR.exceptionOrNull()!!::class)
+    }
+
+    @MethodSource("parentRoutes")
+    @ParameterizedTest
+    fun `copy cannot copy file to outside dir`(parent: String): Unit = runBlocking {
+        rootDir.resolve("test").createFile()
+        val moveR = fileService.copy("test", "$parent/test2")
+        assertTrue(moveR.isSuccess)
+        val newPath = moveR.getOrThrow()
+        assertEquals("/test2", newPath)
+    }
+
+    @Test
+    fun `copy cannot copy unknown file`(): Unit = runBlocking {
+        val moveR = fileService.copy("unknown", "test")
+        assertTrue(moveR.isFailure)
+        assertEquals(NoSuchFileException::class, moveR.exceptionOrNull()!!::class)
+    }
+
+    @Test
+    fun `copy cannot copy file to itself`(): Unit = runBlocking {
+        rootDir.resolve("test").createFile()
+        val moveR = fileService.copy("test", "test")
+        assertTrue(moveR.isFailure)
+        assertEquals(IllegalArgumentException::class, moveR.exceptionOrNull()!!::class)
+        assertEquals("Cannot copy to the same path", moveR.exceptionOrNull()!!.message)
+    }
+
+
 }

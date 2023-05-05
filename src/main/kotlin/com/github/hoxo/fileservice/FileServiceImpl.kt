@@ -12,10 +12,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import java.nio.channels.FileChannel
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
-import java.nio.file.StandardOpenOption
+import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
 import kotlin.io.path.*
 import kotlin.math.max
@@ -158,6 +155,12 @@ class FileServiceImpl(
         val escapedNewPath = escapePath(newPath)
         val fullPath = absolutePathFromRoot(escapedPath)
         val newFullPath = absolutePathFromRoot(escapedNewPath)
+        if (isRoot(fullPath)) {
+            return@withContext Result.failure(IllegalArgumentException("Cannot move root dir"))
+        }
+        if (isRoot(newFullPath)) {
+            return@withContext Result.failure(IllegalArgumentException("Cannot move to root dir"))
+        }
         return@withContext runCatching {
             Files.move(fullPath, newFullPath)
             escapedNewPath
@@ -169,10 +172,38 @@ class FileServiceImpl(
         val escapedNewPath = escapePath(newPath)
         val fullPath = absolutePathFromRoot(escapedPath)
         val newFullPath = absolutePathFromRoot(escapedNewPath)
+        if (fullPath == newFullPath) {
+            return@withContext Result.failure(IllegalArgumentException("Cannot copy to the same path"))
+        }
+        if (isRoot(fullPath)) {
+            return@withContext Result.failure(IllegalArgumentException("Cannot copy root dir"))
+        }
+        if (isRoot(newFullPath)) {
+            return@withContext Result.failure(IllegalArgumentException("Cannot copy to root dir"))
+        }
         return@withContext runCatching {
-            Files.copy(fullPath, newFullPath)
+            if (fullPath.isDirectory()) {
+                copyDirectory(fullPath, newFullPath)
+            } else {
+                Files.copy(fullPath, newFullPath)
+            }
             escapedNewPath
         }
+    }
+
+    private fun copyDirectory(src: Path, dst: Path) {
+        Files.walkFileTree(src, object : SimpleFileVisitor<Path>() {
+            override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
+                val targetPath = dst.resolve(src.relativize(dir))
+                Files.createDirectories(targetPath)
+                return FileVisitResult.CONTINUE
+            }
+
+            override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                Files.copy(file, dst.resolve(src.relativize(file)))
+                return FileVisitResult.CONTINUE
+            }
+        })
     }
 
     override suspend fun append(path: String, data: ByteArray): Result<String> = withContext(Dispatchers.IO) {
