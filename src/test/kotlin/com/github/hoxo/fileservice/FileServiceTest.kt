@@ -13,12 +13,17 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
-import org.mockito.Mockito
+import java.io.IOException
 import java.nio.file.*
 import kotlin.io.path.*
+import kotlin.random.Random
 
 private const val MAX_FILE_CHUNK_SIZE = 10000
 private const val LINUX_DIR_SIZE = 4096L
+private const val RANDOM_SEED = 42L
+private const val BUFFER_SIZE = 1000
+
+private val RANDOM = Random(RANDOM_SEED)
 
 class FileServiceTest {
 
@@ -45,8 +50,8 @@ class FileServiceTest {
 
     @BeforeEach
     fun setup() {
-        val config = Config.SimpleAllocator(enabled = true, bufferSize = 1000)
-        bufferAllocator = Mockito.spy(SimpleBufferAllocator(config))
+        val config = Config.SimpleAllocator(enabled = true, bufferSize = BUFFER_SIZE)
+        bufferAllocator = SimpleBufferAllocator(config)
         rootDir = Files.createTempDirectory("file-service-test-")
         fileService = FileServiceImpl(bufferAllocator, Config(rootDir.absolutePathString(), MAX_FILE_CHUNK_SIZE))
     }
@@ -422,5 +427,111 @@ class FileServiceTest {
         assertEquals("Cannot copy to the same path", moveR.exceptionOrNull()!!.message)
     }
 
+    @Test
+    fun `readFile should validate input params`(): Unit = runBlocking {
+        var result = fileService.readFile("test", -1, 1)
+        assertTrue(result.isFailure)
+        assertEquals(IllegalArgumentException::class, result.exceptionOrNull()!!::class)
+        assertEquals("offset must be non-negative", result.exceptionOrNull()!!.message)
+
+        result = fileService.readFile("test", 0, -1)
+        assertTrue(result.isFailure)
+        assertEquals(IllegalArgumentException::class, result.exceptionOrNull()!!::class)
+        assertEquals("toRead must be positive", result.exceptionOrNull()!!.message)
+
+        result = fileService.readFile("test", 0, MAX_FILE_CHUNK_SIZE + 1)
+        assertTrue(result.isFailure)
+        assertEquals(IllegalArgumentException::class, result.exceptionOrNull()!!::class)
+        assertEquals("toRead must be less than $MAX_FILE_CHUNK_SIZE bytes", result.exceptionOrNull()!!.message)
+    }
+
+    @Test
+    fun `readFile should read file`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val data = RANDOM.nextBytes(BUFFER_SIZE * 7 + 1)
+        testFile.writeBytes(data)
+
+        val result = fileService.readFile("test", 0, data.size)
+        assertTrue(result.isSuccess)
+        val chunk = result.getOrThrow()
+        assertArrayEquals(data, chunk.data)
+        assertEquals(data.size, chunk.size)
+        assertEquals(0, chunk.offset)
+        assertFalse(chunk.hasRemainingData)
+        assertEquals(FileInfo("test", "/test", data.size.toLong(), false), chunk.info)
+    }
+
+    @Test
+    fun `readFile should read only remaining bytes`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val data = RANDOM.nextBytes(BUFFER_SIZE * 7 + 1)
+        testFile.writeBytes(data)
+
+        val result = fileService.readFile("test", 0, MAX_FILE_CHUNK_SIZE)
+        assertTrue(result.isSuccess)
+        val chunk = result.getOrThrow()
+        assertEquals(data.size, chunk.size)
+        assertArrayEquals(data, chunk.data)
+        assertFalse(chunk.hasRemainingData)
+        assertEquals(0, chunk.offset)
+        assertEquals(FileInfo("test", "/test", data.size.toLong(), false), chunk.info)
+    }
+
+    @Test
+    fun `readFile should read from offset`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val data = RANDOM.nextBytes(BUFFER_SIZE * 7 + 1)
+        testFile.writeBytes(data)
+
+        val offset = 1234
+        val result = fileService.readFile("test", offset.toLong(), MAX_FILE_CHUNK_SIZE)
+        assertTrue(result.isSuccess)
+        val chunk = result.getOrThrow()
+        assertEquals(data.size - offset, chunk.size)
+        assertArrayEquals(data.sliceArray(IntRange(offset, data.size - 1)), chunk.data)
+        assertFalse(chunk.hasRemainingData)
+        assertEquals(offset.toLong(), chunk.offset)
+        assertEquals(FileInfo("test", "/test", data.size.toLong(), false), chunk.info)
+    }
+
+    @Test
+    fun `readFile should be aware of remaining data`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val data = RANDOM.nextBytes(BUFFER_SIZE * 7 + 1)
+        testFile.writeBytes(data)
+
+        val result = fileService.readFile("test", 0, data.size - 1)
+        assertTrue(result.isSuccess)
+        val chunk = result.getOrThrow()
+        assertEquals(data.size - 1, chunk.size)
+        assertArrayEquals(data.sliceArray(IntRange(0, data.size - 2)), chunk.data)
+        assertTrue(chunk.hasRemainingData)
+        assertEquals(0, chunk.offset)
+        assertEquals(FileInfo("test", "/test", data.size.toLong(), false), chunk.info)
+    }
+
+    @Test
+    fun `readFile cannot read dir`(): Unit = runBlocking {
+        rootDir.resolve("testDir").createDirectory()
+        val result = fileService.readFile("testDir", 0, 1)
+        assertTrue(result.isFailure)
+        assertEquals(IOException::class, result.exceptionOrNull()!!::class)
+        assertEquals("Is a directory", result.exceptionOrNull()!!.message)
+    }
+
+    @Test
+    fun `readFile cannot unknown file`(): Unit = runBlocking {
+        val result = fileService.readFile("unknown", 0, 1)
+        assertTrue(result.isFailure)
+        assertEquals(NoSuchFileException::class, result.exceptionOrNull()!!::class)
+    }
+
+    @Test
+    fun `readFile cannot read parent files`(): Unit = runBlocking {
+        val tmpFile = createTempFile("test")
+        val result = fileService.readFile(tmpFile.relativeTo(rootDir).toString(), 0, 1)
+        assertTrue(result.isFailure)
+        assertEquals(NoSuchFileException::class, result.exceptionOrNull()!!::class)
+    }
 
 }

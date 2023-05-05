@@ -115,7 +115,7 @@ class FileServiceImpl(
                 }
             }
             val hasRemainingData = expectedToRead < remainingBytes
-            FileChunk(FileInfo(fullPath.name, escapedPath, attr.size(), attr.isDirectory), offset, result.size.toLong(),
+            FileChunk(FileInfo(fullPath.name, escapedPath, attr.size(), attr.isDirectory), offset, result.size,
                 result, hasRemainingData)
         }
     }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import java.util.*
 
+//todo use own thread pool to run blocking code
 @JsonRpcService("FileService")
 @Singleton
 class JsonRpcFileService(
