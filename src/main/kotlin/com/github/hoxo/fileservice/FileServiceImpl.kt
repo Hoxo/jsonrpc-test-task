@@ -145,6 +145,9 @@ class FileServiceImpl(
     override suspend fun delete(path: String): Result<Unit> = withContext(Dispatchers.IO) {
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
+        if (isRoot(fullPath)) {
+            return@withContext Result.failure(IllegalArgumentException("Cannot delete root dir"))
+        }
         return@withContext runCatching {
             Files.delete(fullPath)
         }
