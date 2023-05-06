@@ -1,9 +1,9 @@
 package com.github.hoxo.fileservice.jsonrpc
 
-import com.github.hoxo.fileservice.FileService
 import com.github.hoxo.fileservice.dto.FileChunkDto
 import com.github.hoxo.fileservice.dto.FileInfoDto
 import com.github.hoxo.fileservice.dto.toDto
+import com.github.hoxo.fileservice.service.FileService
 import com.googlecode.jsonrpc4j.*
 import jakarta.inject.Singleton
 import kotlinx.coroutines.Dispatchers

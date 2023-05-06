@@ -12,5 +12,5 @@
     <root level="info">
         <appender-ref ref="STDOUT" />
     </root>
-    <logger name="com.github.hoxo.fileservice.FileController" level="debug" />
+    <logger name="com.github.hoxo.fileservice.http.FileController" level="debug" />
 </configuration>

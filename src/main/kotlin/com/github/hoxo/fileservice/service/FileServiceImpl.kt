@@ -1,5 +1,6 @@
-package com.github.hoxo.fileservice
+package com.github.hoxo.fileservice.service
 
+import com.github.hoxo.fileservice.Config
 import com.github.hoxo.fileservice.buffer.BufferAllocator
 import com.github.hoxo.fileservice.buffer.escapePath
 import com.github.hoxo.fileservice.model.FileChunk

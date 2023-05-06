@@ -3,6 +3,8 @@ package com.github.hoxo.fileservice
 import com.github.hoxo.fileservice.buffer.BufferAllocator
 import com.github.hoxo.fileservice.buffer.SimpleBufferAllocator
 import com.github.hoxo.fileservice.model.FileInfo
+import com.github.hoxo.fileservice.service.FileService
+import com.github.hoxo.fileservice.service.FileServiceImpl
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking

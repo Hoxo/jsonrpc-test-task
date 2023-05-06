@@ -1,7 +1,7 @@
-package com.github.hoxo.fileservice
+package com.github.hoxo.fileservice.http
 
 import com.github.hoxo.fileservice.dto.JsonRpcResponse
-import com.googlecode.jsonrpc4j.ErrorResolver.JsonError
+import com.googlecode.jsonrpc4j.ErrorResolver
 import com.googlecode.jsonrpc4j.JsonRpcServer
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -42,9 +42,9 @@ class FileController(
     fun error(e: Exception): HttpResponse<JsonRpcResponse> {
         LOG.error("file-service.json error", e)
         val jsonRpcCode = when (e) {
-            is HttpServerException -> JsonError.INTERNAL_ERROR.code
-            is HttpClientException -> JsonError.INVALID_REQUEST.code
-            else -> JsonError.INTERNAL_ERROR.code
+            is HttpServerException -> ErrorResolver.JsonError.INTERNAL_ERROR.code
+            is HttpClientException -> ErrorResolver.JsonError.INVALID_REQUEST.code
+            else -> ErrorResolver.JsonError.INTERNAL_ERROR.code
         }
         //todo expand later
         val httpStatus = when (e) {
@@ -54,8 +54,7 @@ class FileController(
             is HttpServerException -> HttpStatus.INTERNAL_SERVER_ERROR
             else -> HttpStatus.INTERNAL_SERVER_ERROR
         }
-        return HttpResponse
-            .status<JsonRpcResponse?>(httpStatus)
-            .body(JsonRpcResponse(error = JsonError(jsonRpcCode, e.message, null)))
+        return HttpResponse.status<JsonRpcResponse?>(httpStatus)
+            .body(JsonRpcResponse(error = ErrorResolver.JsonError(jsonRpcCode, e.message, null)))
     }
 }

@@ -1,4 +1,4 @@
-package com.github.hoxo.fileservice
+package com.github.hoxo.fileservice.service
 
 import com.github.hoxo.fileservice.model.FileChunk
 import com.github.hoxo.fileservice.model.FileInfo
