@@ -35,7 +35,7 @@ dependencies {
 }
 
 application {
-    mainClass.set("com.github.hoxo.ApplicationKt")
+    mainClass.set("com.github.hoxo.fileservice.ApplicationKt")
 }
 java {
     sourceCompatibility = JavaVersion.toVersion("17")
