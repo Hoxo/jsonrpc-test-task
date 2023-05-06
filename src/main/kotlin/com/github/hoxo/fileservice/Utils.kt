@@ -1,4 +1,4 @@
-package com.github.hoxo.fileservice.buffer
+package com.github.hoxo.fileservice
 
 import java.nio.file.Path
 

@@ -6,11 +6,16 @@ import com.github.hoxo.fileservice.dto.FileInfoDto
 import com.github.hoxo.fileservice.dto.FileListDto
 import com.github.hoxo.fileservice.jsonrpc.JsonRpcResponse
 import io.micronaut.http.MediaType
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Post
 import io.micronaut.http.client.annotation.Client
 
 @Client("/file-service.json")
 interface FileServiceClient {
+
+    @Post(consumes = [MediaType.APPLICATION_JSON], produces = [MediaType.APPLICATION_JSON])
+    fun rawRequest(@Body json: String): JsonRpcResponse<*>
+
     @Post(consumes = [MediaType.APPLICATION_JSON], produces = [MediaType.APPLICATION_JSON])
     fun list(id: Int, params: ListParams, method: String = "list",
              jsonrpc: String = "2.0"): JsonRpcResponse<FileListDto>

@@ -90,18 +90,4 @@ class FileServiceApiTest: TestPropertyProvider {
         assertEquals(FileInfoDto("", LINUX_DIR_SIZE, "/", true), response.result!!)
     }
 
-    private fun assertJsonRpcResponse(response: JsonRpcResponse<*>, id: String) {
-        assertEquals(id, response.id)
-        assertEquals("2.0", response.jsonrpc)
-        assertNull(response.error)
-        assertNotNull(response.result)
-    }
-
-    private fun assertJsonRpcError(response: JsonRpcResponse<*>, id: String) {
-        assertEquals(id, response.id)
-        assertEquals("2.0", response.jsonrpc)
-        assertNotNull(response.error)
-        assertNull(response.result)
-    }
-
 }

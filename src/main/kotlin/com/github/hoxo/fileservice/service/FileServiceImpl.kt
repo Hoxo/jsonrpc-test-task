@@ -2,7 +2,7 @@ package com.github.hoxo.fileservice.service
 
 import com.github.hoxo.fileservice.Config
 import com.github.hoxo.fileservice.buffer.BufferAllocator
-import com.github.hoxo.fileservice.buffer.escapePath
+import com.github.hoxo.fileservice.escapePath
 import com.github.hoxo.fileservice.model.FileChunk
 import com.github.hoxo.fileservice.model.FileInfo
 import jakarta.inject.Singleton

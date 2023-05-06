@@ -1,6 +1,5 @@
 package com.github.hoxo.fileservice
 
-import com.github.hoxo.fileservice.buffer.escapePath
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
