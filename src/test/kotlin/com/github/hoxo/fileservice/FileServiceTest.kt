@@ -534,4 +534,56 @@ class FileServiceTest {
         assertEquals(NoSuchFileException::class, result.exceptionOrNull()!!::class)
     }
 
+    @Test
+    fun `append should work`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+
+        val appendData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+        val result = fileService.append("test", appendData)
+        assertTrue(result.isSuccess)
+        val fileInfo = result.getOrThrow()
+        assertEquals(FileInfo("test", "/test", appendData.size.toLong(), false), fileInfo)
+        val fileData = testFile.readBytes()
+        assertArrayEquals(appendData, fileData)
+
+        val appendData2 = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+        val result2 = fileService.append("test", appendData2)
+        assertTrue(result2.isSuccess)
+        val fileInfo2 = result2.getOrThrow()
+        assertEquals(FileInfo("test", "/test", appendData.size.toLong() + appendData2.size.toLong(), false), fileInfo2)
+        val fileData2 = testFile.readBytes()
+        assertArrayEquals(appendData + appendData2, fileData2)
+    }
+
+    @Test
+    fun `append should validate input params`(): Unit = runBlocking {
+        val result = fileService.append("test", ByteArray(0))
+        assertTrue(result.isFailure)
+        assertEquals(IllegalArgumentException::class, result.exceptionOrNull()!!::class)
+        assertEquals("data must not be empty", result.exceptionOrNull()!!.message)
+    }
+
+    @Test
+    fun `append should not append to dir`(): Unit = runBlocking {
+        rootDir.resolve("testDir").createDirectory()
+        val result = fileService.append("testDir", ByteArray(1))
+        assertTrue(result.isFailure)
+        assertEquals(FileSystemException::class, result.exceptionOrNull()!!::class)
+        assertEquals("Cannot append to directory", result.exceptionOrNull()!!.message)
+    }
+
+    @Test
+    fun `append should not append to unknown file`(): Unit = runBlocking {
+        val result = fileService.append("unknown", ByteArray(1))
+        assertTrue(result.isFailure)
+        assertEquals(NoSuchFileException::class, result.exceptionOrNull()!!::class)
+    }
+
+    @Test
+    fun `append should not append to parent files`(): Unit = runBlocking {
+        val tmpFile = createTempFile("test")
+        val result = fileService.append(tmpFile.relativeTo(rootDir).toString(), ByteArray(1))
+        assertTrue(result.isFailure)
+        assertEquals(NoSuchFileException::class, result.exceptionOrNull()!!::class)
+    }
 }

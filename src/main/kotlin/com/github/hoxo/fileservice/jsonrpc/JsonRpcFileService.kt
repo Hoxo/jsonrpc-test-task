@@ -103,11 +103,11 @@ class JsonRpcFileService(
     fun append(
         @JsonRpcParam("path") path: String,
         @JsonRpcParam("data") data: String
-    ): String {
+    ): FileInfoDto {
         val result = runBlocking(Dispatchers.Default) {
             fileService.append(path, base64Decoder.decode(data))
         }
-        return result.getOrThrow()
+        return result.getOrThrow().toDto()
     }
 
 }

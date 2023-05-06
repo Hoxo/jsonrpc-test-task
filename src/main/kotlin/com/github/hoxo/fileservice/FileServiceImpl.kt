@@ -206,12 +206,19 @@ class FileServiceImpl(
         })
     }
 
-    override suspend fun append(path: String, data: ByteArray): Result<String> = withContext(Dispatchers.IO) {
+    override suspend fun append(path: String, data: ByteArray): Result<FileInfo> = withContext(Dispatchers.IO) {
+        if (data.isEmpty()) {
+            return@withContext Result.failure(IllegalArgumentException("data must not be empty"))
+        }
         val escapedPath = escapePath(path)
         val fullPath = absolutePathFromRoot(escapedPath)
         return@withContext runCatching {
+            if (fullPath.isDirectory()) {
+                throw FileSystemException("Cannot append to directory")
+            }
+
             Files.write(fullPath, data, StandardOpenOption.APPEND)
-            escapedPath
+            return@runCatching FileInfo(fullPath.name, escapedPath, fullPath.fileSize(), false)
         }
     }
 

@@ -13,5 +13,5 @@ interface FileService {
     suspend fun delete(path: String): Result<Unit>
     suspend fun move(path: String, newPath: String): Result<String>
     suspend fun copy(path: String, newPath: String): Result<String>
-    suspend fun append(path: String, data: ByteArray): Result<String>
+    suspend fun append(path: String, data: ByteArray): Result<FileInfo>
 }
