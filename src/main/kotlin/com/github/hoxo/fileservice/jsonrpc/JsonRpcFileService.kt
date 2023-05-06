@@ -2,6 +2,7 @@ package com.github.hoxo.fileservice.jsonrpc
 
 import com.github.hoxo.fileservice.dto.FileChunkDto
 import com.github.hoxo.fileservice.dto.FileInfoDto
+import com.github.hoxo.fileservice.dto.FileListDto
 import com.github.hoxo.fileservice.dto.toDto
 import com.github.hoxo.fileservice.service.FileService
 import com.googlecode.jsonrpc4j.*
@@ -29,9 +30,9 @@ class JsonRpcFileService(
     }
 
     @JsonRpcMethod("list")
-    fun listFiles(@JsonRpcParam("path") path: String): List<FileInfoDto> {
+    fun listFiles(@JsonRpcParam("path") path: String): FileListDto {
         return runBlocking(Dispatchers.Default) {
-            fileService.list(path).getOrThrow().toList().map { it.toDto() }
+            FileListDto(fileService.list(path).getOrThrow().toList().map { it.toDto() })
         }
     }
 

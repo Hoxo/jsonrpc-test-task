@@ -61,7 +61,7 @@ class FileServiceImpl(
                 .asSequence()
                 .asFlow()
                 .map { it to it.readAttributes<BasicFileAttributes>() }
-                .map { (p, a) -> FileInfo(p.name, p.relativeTo(fullPath).toString(), a.size(), a.isDirectory) }
+                .map { (p, a) -> FileInfo(p.name, "/" + p.relativeTo(fullPath).toString(), a.size(), a.isDirectory) }
                 .flowOn(Dispatchers.IO)
         }
     }

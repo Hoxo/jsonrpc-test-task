@@ -1,7 +1,9 @@
 package com.github.hoxo.fileservice.dto
 
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.github.hoxo.fileservice.model.FileInfo
 
+@JsonInclude
 data class FileInfoDto(
     val name: String,
     val size: Long,

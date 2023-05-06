@@ -21,7 +21,7 @@ import kotlin.io.path.*
 import kotlin.random.Random
 
 private const val MAX_FILE_CHUNK_SIZE = 10000
-private const val LINUX_DIR_SIZE = 4096L
+const val LINUX_DIR_SIZE = 4096L
 private const val RANDOM_SEED = 42L
 private const val BUFFER_SIZE = 1000
 
@@ -122,9 +122,9 @@ class FileServiceTest {
         val list = listR.getOrThrow().toList()
         assertEquals(3, list.size)
         list.let {
-            assertTrue(it.contains(FileInfo("file1", "file1", 0, false)))
-            assertTrue(it.contains(FileInfo("file2", "file2", 0, false)))
-            assertTrue(it.contains(FileInfo("dir1", "dir1", LINUX_DIR_SIZE, true)))
+            assertTrue(it.contains(FileInfo("file1", "/file1", 0, false)))
+            assertTrue(it.contains(FileInfo("file2", "/file2", 0, false)))
+            assertTrue(it.contains(FileInfo("dir1", "/dir1", LINUX_DIR_SIZE, true)))
         }
     }
 

@@ -1,6 +1,6 @@
 package com.github.hoxo.fileservice.http
 
-import com.github.hoxo.fileservice.dto.JsonRpcResponse
+import com.github.hoxo.fileservice.jsonrpc.JsonRpcResponse
 import com.googlecode.jsonrpc4j.ErrorResolver
 import com.googlecode.jsonrpc4j.JsonRpcServer
 import io.micronaut.http.HttpResponse
@@ -34,12 +34,13 @@ class FileController(
             outputStream.toString()
         }.also {
             LOG.debug("file-service.json request: {}", request)
+            LOG.debug("file-service.json response: {}", it.value)
             LOG.info("file-service.json request: took {}ms", it.duration.toDouble(DurationUnit.MILLISECONDS))
         }.value
     }
 
     @Error(exception = Exception::class)
-    fun error(e: Exception): HttpResponse<JsonRpcResponse> {
+    fun error(e: Exception): HttpResponse<JsonRpcResponse<Any>> {
         LOG.error("file-service.json error", e)
         val jsonRpcCode = when (e) {
             is HttpServerException -> ErrorResolver.JsonError.INTERNAL_ERROR.code
@@ -54,7 +55,7 @@ class FileController(
             is HttpServerException -> HttpStatus.INTERNAL_SERVER_ERROR
             else -> HttpStatus.INTERNAL_SERVER_ERROR
         }
-        return HttpResponse.status<JsonRpcResponse?>(httpStatus)
-            .body(JsonRpcResponse(error = ErrorResolver.JsonError(jsonRpcCode, e.message, null)))
+        return HttpResponse.status<JsonRpcResponse<Any>?>(httpStatus)
+            .body(JsonRpcResponse(error = JsonRpcResponse.Error(jsonRpcCode, e.message, null)))
     }
 }
