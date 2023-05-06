@@ -10,6 +10,7 @@ version = "0.1"
 group = "com.github.hoxo"
 
 val kotlinVersion=project.properties.get("kotlinVersion")
+val kotlinCoroutinesVersion=project.properties.get("kotlinCoroutinesVersion")
 repositories {
     mavenCentral()
 }
@@ -21,7 +22,7 @@ dependencies {
     implementation("io.micronaut.kotlin:micronaut-kotlin-runtime")
     implementation("jakarta.annotation:jakarta.annotation-api")
     implementation("org.jetbrains.kotlin:kotlin-reflect:${kotlinVersion}")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${kotlinCoroutinesVersion}")
     implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:${kotlinVersion}")
     implementation("ch.qos.logback:logback-classic")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

@@ -12,9 +12,14 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import java.nio.channels.FileChannel
+import java.nio.ByteBuffer
+import java.nio.channels.AsynchronousFileChannel
+import java.nio.channels.CompletionHandler
 import java.nio.file.*
 import java.nio.file.attribute.BasicFileAttributes
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlin.io.path.*
 import kotlin.math.max
 import kotlin.math.min
@@ -92,10 +97,10 @@ class FileServiceImpl(
             val result = ByteArray(expectedToRead)
             bufferAllocator.borrow { buffer ->
                 withContext(Dispatchers.IO) {
-                    FileChannel.open(fullPath, StandardOpenOption.READ).use { channel ->
+                    AsynchronousFileChannel.open(fullPath, StandardOpenOption.READ).use { channel ->
                         var position = 0
                         while (true) {
-                            val read = channel.read(buffer, offset + position)
+                            val read = channel.readSuspend(buffer, offset + position)
                             if (read == -1) {
                                 break
                             }
@@ -217,8 +222,11 @@ class FileServiceImpl(
             if (fullPath.isDirectory()) {
                 throw FileSystemException("Cannot append to directory")
             }
-
-            Files.write(fullPath, data, StandardOpenOption.APPEND)
+            withContext(Dispatchers.IO) {
+                AsynchronousFileChannel.open(fullPath, StandardOpenOption.WRITE).use { channel ->
+                    channel.writeSuspend(ByteBuffer.wrap(data), fullPath.fileSize())
+                }
+            }
             return@runCatching FileInfo(fullPath.name, escapedPath, fullPath.fileSize(), false)
         }
     }
@@ -226,4 +234,32 @@ class FileServiceImpl(
     private fun absolutePathFromRoot(path: String): Path = Paths.get(config.rootDir, path)
 
     private fun isRoot(path: Path): Boolean = path == rootPath
+}
+
+private suspend fun AsynchronousFileChannel.readSuspend(buffer: ByteBuffer, position: Long): Int {
+    return suspendCoroutine { cont ->
+        read(buffer, position, null, object : CompletionHandler<Int, Unit?> {
+            override fun completed(result: Int, attachment: Unit?) {
+                cont.resume(result)
+            }
+
+            override fun failed(exc: Throwable, attachment: Unit?) {
+                cont.resumeWithException(exc)
+            }
+        })
+    }
+}
+
+private suspend fun AsynchronousFileChannel.writeSuspend(buffer: ByteBuffer, position: Long): Int {
+    return suspendCoroutine { cont ->
+        write(buffer, position, null, object : CompletionHandler<Int, Unit?> {
+            override fun completed(result: Int, attachment: Unit?) {
+                cont.resume(result)
+            }
+
+            override fun failed(exc: Throwable, attachment: Unit?) {
+                cont.resumeWithException(exc)
+            }
+        })
+    }
 }
