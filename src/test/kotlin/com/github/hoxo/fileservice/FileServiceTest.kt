@@ -116,14 +116,14 @@ class FileServiceTest {
         testDir.resolve("file1").createFile()
         testDir.resolve("file2").createFile()
         testDir.resolve("dir1/dir2").createDirectories()
-        val listR = fileService.list(rootDir.relativize(testDir).toString())
+        val listR = fileService.list("list")
         assertTrue(listR.isSuccess)
         val list = listR.getOrThrow().toList()
         assertEquals(3, list.size)
         list.let {
-            assertTrue(it.contains(FileInfo("file1", "/file1", 0, false)))
-            assertTrue(it.contains(FileInfo("file2", "/file2", 0, false)))
-            assertTrue(it.contains(FileInfo("dir1", "/dir1", LINUX_DIR_SIZE, true)))
+            assertTrue(it.contains(FileInfo("file1", "file1", 0, false)))
+            assertTrue(it.contains(FileInfo("file2", "file2", 0, false)))
+            assertTrue(it.contains(FileInfo("dir1", "dir1", LINUX_DIR_SIZE, true)))
         }
     }
 
