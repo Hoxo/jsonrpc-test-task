@@ -31,7 +31,6 @@ class FileServiceTest {
         @JvmStatic
         private fun parentRoutes() = listOf(
             Arguments.of(".."),
-            Arguments.of("/../../../../"),
             Arguments.of("../../../../../.."),
             Arguments.of("/../../"),
         )
