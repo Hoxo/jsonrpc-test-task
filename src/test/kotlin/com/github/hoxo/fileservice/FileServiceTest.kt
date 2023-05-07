@@ -122,9 +122,9 @@ class FileServiceTest {
         val list = listR.getOrThrow().toList()
         assertEquals(3, list.size)
         list.let {
-            assertTrue(it.contains(FileInfo("file1", "/file1", 0, false)))
-            assertTrue(it.contains(FileInfo("file2", "/file2", 0, false)))
-            assertTrue(it.contains(FileInfo("dir1", "/dir1", LINUX_DIR_SIZE, true)))
+            assertTrue(it.contains(FileInfo("file1", "/list/file1", 0, false)))
+            assertTrue(it.contains(FileInfo("file2", "/list/file2", 0, false)))
+            assertTrue(it.contains(FileInfo("dir1", "/list/dir1", LINUX_DIR_SIZE, true)))
         }
     }
 
