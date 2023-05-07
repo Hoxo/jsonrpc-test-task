@@ -42,15 +42,15 @@ interface FileServiceClient {
 
     @Post(consumes = [MediaType.APPLICATION_JSON], produces = [MediaType.APPLICATION_JSON])
     fun createDir(id: Int, params: CreateDirParams, method: String = "createEmptyDir",
-                  jsonrpc: String = "2.0"): JsonRpcResponse<String>
+                  jsonrpc: String = "2.0"): JsonRpcResponse<FileInfoDto>
 
     @Post(consumes = [MediaType.APPLICATION_JSON], produces = [MediaType.APPLICATION_JSON])
     fun createFile(id: Int, params: CreateFileParams, method: String = "createEmptyFile",
-                   jsonrpc: String = "2.0"): JsonRpcResponse<String>
+                   jsonrpc: String = "2.0"): JsonRpcResponse<FileInfoDto>
 
     @Post(consumes = [MediaType.APPLICATION_JSON], produces = [MediaType.APPLICATION_JSON])
-    fun appendFile(id: Int, params: AppendFileParams, method: String = "appendFile",
-                   jsonrpc: String = "2.0"): JsonRpcResponse<FileInfoDto>
+    fun append(id: Int, params: AppendParams, method: String = "append",
+               jsonrpc: String = "2.0"): JsonRpcResponse<FileInfoDto>
 
 }
 
@@ -61,7 +61,7 @@ data class GetInfoParams(val path: String)
 data class ListParams(val path: String)
 
 @JsonInclude
-data class ReadFileParams(val path: String, val offset: Long, val size: Int)
+data class ReadFileParams(val path: String, val offset: Long, val toRead: Int)
 
 @JsonInclude
 data class MoveParams(val path: String, val newPath: String)
@@ -79,4 +79,4 @@ data class CreateDirParams(val path: String)
 data class CreateFileParams(val path: String)
 
 @JsonInclude
-data class AppendFileParams(val path: String, val data: String)
+data class AppendParams(val path: String, val data: String)

@@ -1,7 +1,7 @@
 package com.github.hoxo.fileservice.http
 
+import com.github.hoxo.fileservice.jsonrpc.FileErrorResolver
 import com.github.hoxo.fileservice.jsonrpc.JsonRpcResponse
-import com.googlecode.jsonrpc4j.ErrorResolver
 import com.googlecode.jsonrpc4j.JsonRpcServer
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
@@ -25,7 +25,8 @@ private val LOG = LoggerFactory.getLogger(FileController::class.java)
 @Controller("/file-service.json", produces = ["application/json"], consumes = ["application/json"])
 class FileController(
     private val jsonRpcServer: JsonRpcServer,
-    private val fileServicePool: FileServicePool
+    private val fileServicePool: FileServicePool,
+    private val errorResolver: FileErrorResolver,
 ) {
     @OptIn(ExperimentalTime::class)
     @Post
@@ -46,12 +47,7 @@ class FileController(
     @Error(exception = Exception::class)
     fun error(e: Exception): HttpResponse<JsonRpcResponse<Any>> {
         LOG.error("file-service.json error", e)
-        val jsonRpcCode = when (e) {
-            is HttpServerException -> ErrorResolver.JsonError.INTERNAL_ERROR.code
-            is HttpClientException -> ErrorResolver.JsonError.INVALID_REQUEST.code
-            else -> ErrorResolver.JsonError.INTERNAL_ERROR.code
-        }
-        //todo expand later
+        val response = errorResolver.resolveError(e)
         val httpStatus = when (e) {
             is HttpStatusException -> e.status
             is ContentLengthExceededException -> HttpStatus.REQUEST_ENTITY_TOO_LARGE
@@ -60,6 +56,6 @@ class FileController(
             else -> HttpStatus.INTERNAL_SERVER_ERROR
         }
         return HttpResponse.status<JsonRpcResponse<Any>?>(httpStatus)
-            .body(JsonRpcResponse(error = JsonRpcResponse.Error(jsonRpcCode, e.message, null)))
+            .body(JsonRpcResponse(error = response))
     }
 }

@@ -71,14 +71,16 @@ class JsonRpcApiTest {
 
 }
 
-fun assertJsonRpcResponse(response: JsonRpcResponse<*>, id: String) {
+fun assertJsonRpcResponse(response: JsonRpcResponse<*>, id: String, nullable: Boolean = false) {
     assertEquals(id, response.id)
     assertEquals("2.0", response.jsonrpc)
     assertNull(response.error)
-    assertNotNull(response.result)
+    if (!nullable) {
+        assertNotNull(response.result)
+    }
 }
 
-fun assertJsonRpcError(response: JsonRpcResponse<*>, id: String) {
+fun assertJsonRpcError(response: JsonRpcResponse<*>, id: String?) {
     assertEquals(id, response.id)
     assertEquals("2.0", response.jsonrpc)
     assertNotNull(response.error)
