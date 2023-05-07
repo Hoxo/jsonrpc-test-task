@@ -12,4 +12,9 @@ data class Config(
         var enabled: Boolean = false,
         var bufferSize: Int = 8192
     )
+
+    @ConfigurationProperties("file-service")
+    data class FileService(
+        var poolSize: Int = 10,
+    )
 }

@@ -30,6 +30,7 @@ dependencies {
     implementation("com.github.briandilley.jsonrpc4j:jsonrpc4j:1.6")
     runtimeOnly("javax.servlet:servlet-api:2.5")
     runtimeOnly("javax.portlet:portlet-api:3.0.1")
+    runtimeOnly("jakarta.jws:jakarta.jws-api:2.1.0")
 
     testImplementation("org.junit.jupiter:junit-jupiter-params:5.9.2")
     testImplementation("org.mockito:mockito-core:5.3.1")

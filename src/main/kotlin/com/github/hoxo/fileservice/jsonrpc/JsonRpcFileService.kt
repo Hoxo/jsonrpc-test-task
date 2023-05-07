@@ -8,11 +8,11 @@ import com.github.hoxo.fileservice.service.FileService
 import com.googlecode.jsonrpc4j.*
 import jakarta.inject.Singleton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
 import java.util.*
 
-//todo use own thread pool to run blocking code
 @JsonRpcService("FileService")
 @Singleton
 class JsonRpcFileService(
@@ -32,7 +32,11 @@ class JsonRpcFileService(
     @JsonRpcMethod("list")
     fun listFiles(@JsonRpcParam("path") path: String): FileListDto {
         return runBlocking(Dispatchers.Default) {
-            FileListDto(fileService.list(path).getOrThrow().toList().map { it.toDto() })
+            val result = fileService.list(path)
+                .getOrThrow()
+                .map { it.toDto() }
+                .toList()
+            FileListDto(result)
         }
     }
 

@@ -13,6 +13,7 @@ import io.micronaut.http.client.exceptions.HttpClientException
 import io.micronaut.http.exceptions.ContentLengthExceededException
 import io.micronaut.http.exceptions.HttpStatusException
 import io.micronaut.http.server.exceptions.HttpServerException
+import kotlinx.coroutines.withContext
 import org.slf4j.LoggerFactory
 import java.io.ByteArrayOutputStream
 import kotlin.time.DurationUnit
@@ -23,14 +24,17 @@ private val LOG = LoggerFactory.getLogger(FileController::class.java)
 
 @Controller("/file-service.json", produces = ["application/json"], consumes = ["application/json"])
 class FileController(
-    private val jsonRpcServer: JsonRpcServer
+    private val jsonRpcServer: JsonRpcServer,
+    private val fileServicePool: FileServicePool
 ) {
     @OptIn(ExperimentalTime::class)
     @Post
-    fun jsonRpc(@Body request: String): String {
+    suspend fun jsonRpc(@Body request: String): String {
         val outputStream = ByteArrayOutputStream()
         return measureTimedValue {
-            jsonRpcServer.handleRequest(request.byteInputStream(), outputStream)
+            withContext(fileServicePool.dispatcher) {
+                jsonRpcServer.handleRequest(request.byteInputStream(), outputStream)
+            }
             outputStream.toString()
         }.also {
             LOG.debug("file-service.json request: {}", request)
