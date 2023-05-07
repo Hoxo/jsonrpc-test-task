@@ -99,4 +99,16 @@ interface FileService {
      */
     @Throws(IOException::class)
     suspend fun append(path: String, data: ByteArray): FileInfo
+
+    /**
+     * Write data to the file with given offset.
+     * @param path path to file
+     * @param offset offset in bytes
+     * @param data data to write
+     * @return FileInfo object with file info
+     * @throws IllegalArgumentException if offset is negative or data is empty
+     * @throws java.io.IOException if path is not a file, if file not exists or can't be written
+     */
+    @Throws(IOException::class)
+    suspend fun write(path: String, offset: Long, data: ByteArray): FileInfo
 }

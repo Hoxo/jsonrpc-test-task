@@ -52,6 +52,10 @@ interface FileServiceClient {
     fun append(id: Int, params: AppendParams, method: String = "append",
                jsonrpc: String = "2.0"): JsonRpcResponse<FileInfoDto>
 
+    @Post(consumes = [MediaType.APPLICATION_JSON], produces = [MediaType.APPLICATION_JSON])
+    fun write(id: Int, params: WriteParams, method: String = "write",
+              jsonrpc: String = "2.0"): JsonRpcResponse<FileInfoDto>
+
 }
 
 @JsonInclude
@@ -80,3 +84,6 @@ data class CreateFileParams(val path: String)
 
 @JsonInclude
 data class AppendParams(val path: String, val data: String)
+
+@JsonInclude
+data class WriteParams(val path: String, val offset: Long, val data: String)

@@ -114,4 +114,16 @@ class JsonRpcFileService(
         return result.toDto()
     }
 
+    @JsonRpcMethod("write")
+    fun write(
+        @JsonRpcParam("path") path: String,
+        @JsonRpcParam("offset") offset: Long,
+        @JsonRpcParam("data") data: String
+    ): FileInfoDto {
+        val result = runBlocking(Dispatchers.Default) {
+            fileService.write(path, offset, base64Decoder.decode(data))
+        }
+        return result.toDto()
+    }
+
 }

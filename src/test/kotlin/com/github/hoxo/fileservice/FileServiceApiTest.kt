@@ -451,4 +451,57 @@ class FileServiceApiTest: TestPropertyProvider {
                     " maximum allowed content length [${MAX_REQUEST_SIZE}]"
         )), response.error)
     }
+
+    @Test
+    fun `write should work`() {
+        val testDir = rootDir.resolve("dir1").createDirectory()
+        testDir.resolve("file1").createFile()
+        val data = RANDOM.nextBytes(1234)
+
+        val response = client.write(1, WriteParams("dir1/file1", 0, encoder.encodeToString(data)))
+
+        assertJsonRpcResponse(response, "1")
+        val result = response.result!!
+        assertEquals(FileInfoDto("file1", 1234, "/dir1/file1", false), result)
+        assertArrayEquals(data, testDir.resolve("file1").readBytes())
+    }
+
+    @Test
+    fun `write should work on empty file`() {
+        val testDir = rootDir.resolve("dir1").createDirectory()
+        val data = RANDOM.nextBytes(3000)
+        testDir.resolve("file1").createFile().writeBytes(data)
+
+
+        val offset = 1234L
+        val response = client.write(1, WriteParams("dir1/file1", offset, encoder.encodeToString(data)))
+
+        assertJsonRpcResponse(response, "1")
+        val result = response.result!!
+        assertEquals(FileInfoDto("file1", offset + data.size, "/dir1/file1", false), result)
+        val fileData = testDir.resolve("file1").readBytes()
+        assertArrayEquals(data.sliceArray(0 until offset.toInt()) + data, fileData)
+    }
+
+    @Test
+    fun `write should return error on unknown file`() {
+        val response = client.write(1, WriteParams("unknown", 0, encoder.encodeToString(RANDOM.nextBytes(1))))
+
+        assertJsonRpcError(response, "1")
+        assertEquals(JsonRpcErrors.NOT_FOUND.copy(data = JsonRpcResponse.Error.Data(
+            message = "NoSuchFileException: /unknown"
+        )), response.error)
+    }
+
+    @Test
+    fun `write should return error on dir`() {
+        val testDir = rootDir.resolve("dir1").createDirectory()
+        testDir.resolve("file1").createFile()
+        val response = client.write(1, WriteParams("dir1", 0, encoder.encodeToString(RANDOM.nextBytes(1))))
+
+        assertJsonRpcError(response, "1")
+        assertEquals(JsonRpcErrors.BAD_REQUEST.copy(data = JsonRpcResponse.Error.Data(
+            message = "FileSystemException: Cannot write to directory"
+        )), response.error)
+    }
 }

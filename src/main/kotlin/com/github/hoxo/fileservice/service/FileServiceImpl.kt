@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.channels.AsynchronousFileChannel
 import java.nio.channels.CompletionHandler
@@ -25,14 +26,28 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.streams.asSequence
 
+/**
+ * Implementation of [FileService] for local file system based on configurable root dir. User can't access files
+ * outside this root dir. All paths are relative to root dir.
+ *
+ * @param bufferAllocator buffer allocator to allocate buffers for file reading
+ * @param config configuration
+ * @throws IllegalArgumentException if root dir path is not exists or not a directory
+ * @throws java.io.IOException if root dir path can't be read
+ */
 @Singleton
-class FileServiceImpl(
+class FileServiceImpl
+@Throws(IOException::class)
+constructor(
     private val bufferAllocator: BufferAllocator,
     private val config: Config,
 ): FileService {
     private val rootPath = Path.of(config.rootDir)
 
     init {
+        if (rootPath.notExists()) {
+            throw IllegalArgumentException("Root dir ${config.rootDir} is not exists")
+        }
         if (!rootPath.isDirectory()) {
             throw IllegalArgumentException("Root dir ${config.rootDir} is not a directory")
         }
@@ -210,6 +225,26 @@ class FileServiceImpl(
             }
         }
         FileInfo(fullPath.name, escapedPath, fullPath.fileSize(), false)
+    }
+
+    override suspend fun write(path: String, offset: Long, data: ByteArray): FileInfo {
+        if (data.isEmpty()) {
+            throw IllegalArgumentException("data must not be empty")
+        }
+        if (offset < 0) {
+            throw IllegalArgumentException("offset must be non-negative")
+        }
+        val escapedPath = escapePath(path)
+        val fullPath = absolutePathFromRoot(escapedPath)
+        if (fullPath.isDirectory()) {
+            throw FileSystemException("Cannot write to directory")
+        }
+        withContext(Dispatchers.IO) {
+            AsynchronousFileChannel.open(fullPath, StandardOpenOption.WRITE).use { channel ->
+                channel.writeSuspend(ByteBuffer.wrap(data), offset)
+            }
+        }
+        return FileInfo(fullPath.name, escapedPath, fullPath.fileSize(), false)
     }
 
     private fun absolutePathFromRoot(path: String): Path = Paths.get(config.rootDir, path)

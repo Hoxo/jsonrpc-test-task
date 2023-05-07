@@ -542,6 +542,62 @@ class FileServiceTest {
             fileService.append(tmpFile.relativeTo(rootDir).toString(), ByteArray(1))
         }
     }
+
+    @Test
+    fun `write should work`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val initialData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+        testFile.writeBytes(initialData)
+
+        val writeData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+        val offset = 1234L
+        val fileInfo = fileService.write("test", offset, writeData)
+        assertEquals(FileInfo("test", "/test", offset + writeData.size.toLong(), false), fileInfo)
+        val fileData = testFile.readBytes()
+        assertArrayEquals(initialData.sliceArray(0 until offset.toInt()) + writeData, fileData)
+    }
+
+    @Test
+    fun `write will overwrite file`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val initialData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+        testFile.writeBytes(initialData)
+
+        val writeData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 2)
+        val fileInfo = fileService.write("test", 0, writeData)
+        assertEquals(FileInfo("test", "/test", writeData.size.toLong(), false), fileInfo)
+        val fileData = testFile.readBytes()
+        assertArrayEquals(writeData, fileData)
+    }
+
+    @Test
+    fun `write should validate input params`(): Unit = runBlocking {
+        val e = assertThrowsSuspend<IllegalArgumentException> {
+            fileService.write("test", 0, ByteArray(0))
+        }
+        assertEquals("data must not be empty", e.message)
+
+        val e2 = assertThrowsSuspend<IllegalArgumentException> {
+            fileService.write("test", -1, ByteArray(1))
+        }
+        assertEquals("offset must be non-negative", e2.message)
+    }
+
+    @Test
+    fun `write should not write to dir`(): Unit = runBlocking {
+        rootDir.resolve("testDir").createDirectory()
+        val e = assertThrowsSuspend<FileSystemException> {
+            fileService.write("testDir", 0, ByteArray(1))
+        }
+        assertEquals("Cannot write to directory", e.message)
+    }
+
+    @Test
+    fun `write should not write to unknown file`(): Unit = runBlocking {
+        assertThrowsSuspend<NoSuchFileException> {
+            fileService.write("unknown", 0, ByteArray(1))
+        }
+    }
 }
 
 suspend inline fun <reified T : Throwable> assertThrowsSuspend(crossinline block: suspend () -> Unit): T {
