@@ -26,14 +26,13 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.getInfo(path)
         }
-        return result.getOrThrow().toDto()
+        return result.toDto()
     }
 
     @JsonRpcMethod("list")
     fun listFiles(@JsonRpcParam("path") path: String): FileListDto {
         return runBlocking(Dispatchers.Default) {
             val result = fileService.list(path)
-                .getOrThrow()
                 .map { it.toDto() }
                 .toList()
             FileListDto(result)
@@ -47,7 +46,7 @@ class JsonRpcFileService(
         @JsonRpcParam("toRead") toRead: Int
     ): FileChunkDto {
         val content = runBlocking(Dispatchers.Default) {
-            fileService.readFile(path, offset, toRead).getOrThrow()
+            fileService.readFile(path, offset, toRead)
         }
         return FileChunkDto(
             info = content.info.toDto(),
@@ -63,7 +62,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.createEmptyFile(path)
         }
-        return result.getOrThrow().toDto()
+        return result.toDto()
     }
 
     @JsonRpcMethod("createEmptyDir")
@@ -71,13 +70,13 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.createEmptyDir(path)
         }
-        return result.getOrThrow().toDto()
+        return result.toDto()
     }
 
     @JsonRpcMethod("delete")
     fun delete(@JsonRpcParam("path") path: String) {
         runBlocking(Dispatchers.Default) {
-            fileService.delete(path).getOrThrow()
+            fileService.delete(path)
         }
     }
 
@@ -89,7 +88,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.move(path, newPath)
         }
-        return result.getOrThrow()
+        return result
     }
 
     @JsonRpcMethod("copy")
@@ -100,7 +99,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.copy(path, newPath)
         }
-        return result.getOrThrow()
+        return result
     }
 
 
@@ -112,7 +111,7 @@ class JsonRpcFileService(
         val result = runBlocking(Dispatchers.Default) {
             fileService.append(path, base64Decoder.decode(data))
         }
-        return result.getOrThrow().toDto()
+        return result.toDto()
     }
 
 }

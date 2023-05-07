@@ -24,7 +24,7 @@ import kotlin.random.Random
 private val RANDOM = Random(42)
 private const val MAX_CHUNK_SIZE = 10000
 private const val BUFFER_SIZE = 999
-private const val MAX_REQUEST_SIZE = 1000
+private const val MAX_REQUEST_SIZE = 5000
 
 @Property(name = "micronaut.server.max-request-size", value = MAX_REQUEST_SIZE.toString())
 @Property(name = "app.max-file-chunk-size", value = MAX_CHUNK_SIZE.toString())
@@ -417,7 +417,7 @@ class FileServiceApiTest: TestPropertyProvider {
 
     @Test
     fun `append should return error on unknown file`() {
-        val response = client.append(1, AppendParams("unknown", encoder.encodeToString(RANDOM.nextBytes(1234))))
+        val response = client.append(1, AppendParams("unknown", encoder.encodeToString(RANDOM.nextBytes(1))))
 
         assertJsonRpcError(response, "1")
         assertEquals(JsonRpcErrors.NOT_FOUND.copy(data = JsonRpcResponse.Error.Data(
@@ -439,16 +439,16 @@ class FileServiceApiTest: TestPropertyProvider {
 
     @Test
     fun `append should return error on oversize request`() {
+        val encoded = encoder.encodeToString(RANDOM.nextBytes(MAX_REQUEST_SIZE + 1))
         val exception = assertThrows(HttpClientResponseException::class.java) {
-            client.append(1, AppendParams("dir1/file1",
-                encoder.encodeToString(RANDOM.nextBytes(MAX_REQUEST_SIZE + 1))))
+            client.append(1, AppendParams("dir1/file1", encoded))
         }
         assertEquals(HttpStatus.REQUEST_ENTITY_TOO_LARGE, exception.response.status)
         val response = exception.response.getBody(JsonRpcResponse::class.java).orElseThrow()
         assertJsonRpcError(response, null)
         assertEquals(JsonRpcErrors.REQUEST_TOO_LARGE.copy(data = JsonRpcResponse.Error.Data(
-            message = "ContentLengthExceededException: The content length [1419] exceeds the maximum allowed" +
-                    " content length [1000]"
+            message = "ContentLengthExceededException: The content length [6751] exceeds the" +
+                    " maximum allowed content length [${MAX_REQUEST_SIZE}]"
         )), response.error)
     }
 }
