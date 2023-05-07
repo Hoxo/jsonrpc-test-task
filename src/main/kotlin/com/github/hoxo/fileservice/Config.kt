@@ -1,6 +1,7 @@
 package com.github.hoxo.fileservice
 
 import io.micronaut.context.annotation.ConfigurationProperties
+import java.time.Duration
 
 @ConfigurationProperties("app")
 data class Config(
@@ -32,5 +33,21 @@ data class Config(
          * Number of threads to use for file operations
          */
         var poolSize: Int = 10,
+    )
+
+    @ConfigurationProperties("file-locking")
+    data class FileLocking(
+        /**
+         * Enable file locking
+         */
+        var enabled: Boolean = true,
+        /**
+         * Timeout for read lock
+         */
+        var readTimeout: Duration = Duration.ofMillis(1000),
+        /**
+         * Timeout for write lock
+         */
+        var writeTimeout: Duration = Duration.ofMillis(1000),
     )
 }

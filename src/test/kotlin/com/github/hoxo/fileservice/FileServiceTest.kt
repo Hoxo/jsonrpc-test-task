@@ -3,8 +3,10 @@ package com.github.hoxo.fileservice
 import com.github.hoxo.fileservice.buffer.BufferAllocator
 import com.github.hoxo.fileservice.buffer.SimpleBufferAllocator
 import com.github.hoxo.fileservice.model.FileInfo
+import com.github.hoxo.fileservice.service.FileLockRegistryImpl
 import com.github.hoxo.fileservice.service.FileService
 import com.github.hoxo.fileservice.service.FileServiceImpl
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.flow.count
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.runBlocking
@@ -16,7 +18,9 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import java.io.IOException
+import java.nio.channels.AsynchronousFileChannel
 import java.nio.file.*
+import java.time.Duration
 import kotlin.io.path.*
 import kotlin.random.Random
 
@@ -49,12 +53,19 @@ class FileServiceTest {
     private lateinit var bufferAllocator: BufferAllocator
     private lateinit var rootDir: Path
 
+    private val lockRegistry = FileLockRegistryImpl(Config.FileLocking(
+        enabled = true,
+        readTimeout = Duration.ofSeconds(1),
+        writeTimeout = Duration.ofSeconds(1),
+    ))
+
     @BeforeEach
     fun setup() {
         val config = Config.SimpleAllocator(enabled = true, bufferSize = BUFFER_SIZE)
         bufferAllocator = SimpleBufferAllocator(config)
         rootDir = Files.createTempDirectory("file-service-test-")
-        fileService = FileServiceImpl(bufferAllocator, Config(rootDir.absolutePathString(), MAX_FILE_CHUNK_SIZE))
+        fileService = FileServiceImpl(bufferAllocator, lockRegistry,
+            Config(rootDir.absolutePathString(), MAX_FILE_CHUNK_SIZE))
     }
 
     @AfterEach
@@ -596,6 +607,19 @@ class FileServiceTest {
     fun `write should not write to unknown file`(): Unit = runBlocking {
         assertThrowsSuspend<NoSuchFileException> {
             fileService.write("unknown", 0, ByteArray(1))
+        }
+    }
+
+    @Test
+    fun `write exclusive lock`(): Unit = runBlocking {
+        val testFile = rootDir.resolve("test").createFile()
+        val initialData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+        testFile.writeBytes(initialData)
+        lockRegistry.writeLock("/test", AsynchronousFileChannel.open(testFile, StandardOpenOption.WRITE)) {
+            val writeData = RANDOM.nextBytes(BUFFER_SIZE * 3 + 1)
+            assertThrowsSuspend<TimeoutCancellationException> {
+                fileService.write("test", 0, writeData)
+            }
         }
     }
 }

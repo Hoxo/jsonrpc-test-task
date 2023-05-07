@@ -37,6 +37,7 @@ class FileServiceImpl
 @Throws(IOException::class)
 constructor(
     private val bufferAllocator: BufferAllocator,
+    private val fileLockRegistry: FileLockRegistry,
     private val config: Config,
 ): FileService {
     private val rootPath = Path.of(config.rootDir)
@@ -105,23 +106,25 @@ constructor(
         bufferAllocator.borrow { buffer ->
             withContext(Dispatchers.IO) {
                 AsynchronousFileChannel.open(fullPath, StandardOpenOption.READ).use { channel ->
-                    var position = 0
-                    while (true) {
-                        val read = channel.readSuspend(buffer, offset + position)
-                        if (read == -1) {
-                            break
-                        }
-                        val rest = max(expectedToRead - position, 0)
-                        val remaining = min(rest, read)
-                        if (remaining == 0) {
-                            break
-                        }
-                        buffer.flip()
-                        buffer.get(result, position, remaining)
-                        position += remaining
-                        buffer.clear()
-                        if (position == expectedToRead) {
-                            break
+                    fileLockRegistry.readLock(escapedPath, channel) {
+                        var position = 0
+                        while (true) {
+                            val read = channel.readSuspend(buffer, offset + position)
+                            if (read == -1) {
+                                break
+                            }
+                            val rest = max(expectedToRead - position, 0)
+                            val remaining = min(rest, read)
+                            if (remaining == 0) {
+                                break
+                            }
+                            buffer.flip()
+                            buffer.get(result, position, remaining)
+                            position += remaining
+                            buffer.clear()
+                            if (position == expectedToRead) {
+                                break
+                            }
                         }
                     }
                 }
@@ -219,7 +222,9 @@ constructor(
         }
         withContext(Dispatchers.IO) {
             AsynchronousFileChannel.open(fullPath, StandardOpenOption.WRITE).use { channel ->
-                channel.writeSuspend(ByteBuffer.wrap(data), fullPath.fileSize())
+                fileLockRegistry.writeLock(escapedPath, channel) {
+                    channel.writeSuspend(ByteBuffer.wrap(data), fullPath.fileSize())
+                }
             }
         }
         FileInfo(fullPath.name, escapedPath, fullPath.fileSize(), false)
@@ -239,7 +244,9 @@ constructor(
         }
         withContext(Dispatchers.IO) {
             AsynchronousFileChannel.open(fullPath, StandardOpenOption.WRITE).use { channel ->
-                channel.writeSuspend(ByteBuffer.wrap(data), offset)
+                fileLockRegistry.writeLock(escapedPath, channel) {
+                    channel.writeSuspend(ByteBuffer.wrap(data), offset)
+                }
             }
         }
         return FileInfo(fullPath.name, escapedPath, fullPath.fileSize(), false)
