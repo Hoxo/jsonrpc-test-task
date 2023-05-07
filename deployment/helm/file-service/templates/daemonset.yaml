@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: {{ .Release.Name }}
+  name: fs-{{ .Release.Name }}
   namespace: {{ .Release.Namespace }}
   labels:
     k8s-app: file-service
@@ -20,3 +20,14 @@ spec:
         - name: file-service-container
           image: {{ .Values.image.name }}:{{ .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          env:
+            - name: JVM_OPTIONS
+              value: "{{ .Values.app.jvmOptions }}"
+            - name: MICRONAUT_SERVER_HOST
+              value: "{{ .Values.app.host }}"
+            - name: MICRONAUT_SERVER_PORT
+              value: "{{ .Values.app.port }}"
+            - name: APP_ROOT_DIR
+              value: "{{ .Values.app.config.rootDir }}"
