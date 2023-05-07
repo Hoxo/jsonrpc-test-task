@@ -8,6 +8,8 @@ app:
   host: 0.0.0.0
   config:
     rootDir: .
+    maxRequestSize: 10485760
+    maxFileChunkSize: 10485760
 resources:
   requests:
     cpu: 1000m

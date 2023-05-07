@@ -31,3 +31,7 @@ spec:
               value: "{{ .Values.app.port }}"
             - name: APP_ROOT_DIR
               value: "{{ .Values.app.config.rootDir }}"
+            - name: APP_MAX_FILE_CHUNK_SIZE
+              value: "{{ .Values.app.config.maxFileChunkSize }}"
+            - name: MICRONAUT_SERVER_MAX_REQUEST_SIZE
+              value: "{{ .Values.app.config.maxRequestSize }}"
