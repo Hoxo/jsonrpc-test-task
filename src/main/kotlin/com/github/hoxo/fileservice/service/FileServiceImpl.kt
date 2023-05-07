@@ -7,10 +7,7 @@ import com.github.hoxo.fileservice.model.FileChunk
 import com.github.hoxo.fileservice.model.FileInfo
 import jakarta.inject.Singleton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.asFlow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.ByteBuffer
@@ -72,6 +69,7 @@ constructor(
         Files.list(fullPath)
             .asSequence()
             .asFlow()
+            .filter { it.exists() }
             .map { it to it.readAttributes<BasicFileAttributes>() }
             .map { (p, a) -> FileInfo(p.name, "/" + p.relativeTo(rootPath).toString(), a.size(), a.isDirectory) }
             .flowOn(Dispatchers.IO)
