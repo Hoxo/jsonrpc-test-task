@@ -84,7 +84,7 @@ class FileServiceTest {
 
     @Test
     fun `getInfo should fail on unknown path`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.getInfo("unknown")
         }
     }
@@ -120,7 +120,7 @@ class FileServiceTest {
 
     @Test
     fun `list will fail on unknown path`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.list("unknown")
         }
     }
@@ -148,7 +148,7 @@ class FileServiceTest {
 
     @Test
     fun `createEmptyFile cannot create file without dir`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.createEmptyFile("unknown/test")
         }
     }
@@ -156,7 +156,7 @@ class FileServiceTest {
     @Test
     fun `createEmptyFile cannot create duplicate file`(): Unit = runBlocking {
         rootDir.resolve("test").createFile()
-        assertThrowsSuspend<FileAlreadyExistsException> {
+        assertThrows<FileAlreadyExistsException> {
             fileService.createEmptyFile("test")
         }
     }
@@ -184,7 +184,7 @@ class FileServiceTest {
 
     @Test
     fun `createEmptyDir cannot create file without dir`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.createEmptyDir("unknown/test")
         }
     }
@@ -192,7 +192,7 @@ class FileServiceTest {
     @Test
     fun `createEmptyDir cannot create duplicate file`(): Unit = runBlocking {
         rootDir.resolve("test").createFile()
-        assertThrowsSuspend<FileAlreadyExistsException> {
+        assertThrows<FileAlreadyExistsException> {
             fileService.createEmptyDir("test")
         }
     }
@@ -207,7 +207,7 @@ class FileServiceTest {
     @MethodSource("rootRoutes")
     @ParameterizedTest
     fun `delete cannot delete root dir`(root: String): Unit = runBlocking {
-        assertThrowsSuspend<IllegalArgumentException> {
+        assertThrows<IllegalArgumentException> {
             fileService.delete(root)
         }
         assertTrue(rootDir.exists())
@@ -216,7 +216,7 @@ class FileServiceTest {
     @MethodSource("parentRoutes")
     @ParameterizedTest
     fun `delete won't delete outside root dir`(path: String): Unit = runBlocking {
-        assertThrowsSuspend<IllegalArgumentException> {
+        assertThrows<IllegalArgumentException> {
             fileService.delete(path)
         }
         assertTrue(rootDir.exists())
@@ -224,7 +224,7 @@ class FileServiceTest {
 
     @Test
     fun `delete should fail on unknown path`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.delete("unknown")
         }
     }
@@ -233,7 +233,7 @@ class FileServiceTest {
     fun `delete should fail on non empty dir`(): Unit = runBlocking {
         val testDir = rootDir.resolve("test").createDirectory()
         val testFile = testDir.resolve("testFile").createFile()
-        assertThrowsSuspend<DirectoryNotEmptyException> {
+        assertThrows<DirectoryNotEmptyException> {
             fileService.delete("test")
         }
         assertTrue(testDir.exists())
@@ -273,7 +273,7 @@ class FileServiceTest {
     @MethodSource("rootRoutes")
     @ParameterizedTest
     fun `move cannot move root dir`(root: String): Unit = runBlocking {
-        val e = assertThrowsSuspend<IllegalArgumentException> {
+        val e = assertThrows<IllegalArgumentException> {
             fileService.move(root, "test")
         }
         assertEquals("Cannot move root directory", e.message)
@@ -284,7 +284,7 @@ class FileServiceTest {
     fun `move cannot move to root dir`(root: String): Unit = runBlocking {
         val testDir = rootDir.resolve("test").createDirectory()
         testDir.resolve("testFile").createFile()
-        val e = assertThrowsSuspend<IllegalArgumentException> {
+        val e = assertThrows<IllegalArgumentException> {
             fileService.move("test", root)
         }
         assertEquals("Cannot move to root directory", e.message)
@@ -294,7 +294,7 @@ class FileServiceTest {
     fun `move cannot move outside file to root dir`(): Unit = runBlocking {
         val tempFile = createTempFile("test")
         val tempFilePath = tempFile.relativeTo(rootDir).toString()
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.move(tempFilePath, "/test")
         }
     }
@@ -309,7 +309,7 @@ class FileServiceTest {
 
     @Test
     fun `move cannot move unknown file`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.move("unknown", "test")
         }
     }
@@ -347,7 +347,7 @@ class FileServiceTest {
     @MethodSource("rootRoutes")
     @ParameterizedTest
     fun `copy cannot copy root dir`(root: String): Unit = runBlocking {
-        assertThrowsSuspend<IllegalArgumentException> {
+        assertThrows<IllegalArgumentException> {
             fileService.move(root, "test")
         }
     }
@@ -357,7 +357,7 @@ class FileServiceTest {
     fun `copy cannot copy to root dir`(root: String): Unit = runBlocking {
         val testDir = rootDir.resolve("test").createDirectory()
         testDir.resolve("testFile").createFile()
-        assertThrowsSuspend<IllegalArgumentException> {
+        assertThrows<IllegalArgumentException> {
             fileService.copy("test", root)
         }
     }
@@ -366,7 +366,7 @@ class FileServiceTest {
     fun `copy cannot copy outside file to root dir`(): Unit = runBlocking {
         val tempFile = createTempFile("test")
         val tempFilePath = tempFile.relativeTo(rootDir).toString()
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.copy(tempFilePath, "/test")
         }
     }
@@ -381,7 +381,7 @@ class FileServiceTest {
 
     @Test
     fun `copy cannot copy unknown file`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.copy("unknown", "test")
         }
     }
@@ -389,7 +389,7 @@ class FileServiceTest {
     @Test
     fun `copy cannot copy file to itself`(): Unit = runBlocking {
         rootDir.resolve("test").createFile()
-        val e = assertThrowsSuspend<IllegalArgumentException> {
+        val e = assertThrows<IllegalArgumentException> {
             fileService.copy("test", "test")
         }
         assertEquals("Cannot copy to the same path", e.message)
@@ -397,17 +397,17 @@ class FileServiceTest {
 
     @Test
     fun `readFile should validate input params`(): Unit = runBlocking {
-        var e = assertThrowsSuspend<IllegalArgumentException> {
+        var e = assertThrows<IllegalArgumentException> {
             fileService.readFile("test", -1, 1)
         }
         assertEquals("offset must be non-negative", e.message)
 
-        e = assertThrowsSuspend<IllegalArgumentException> {
+        e = assertThrows<IllegalArgumentException> {
             fileService.readFile("test", 0, -1)
         }
         assertEquals("toRead must be positive", e.message)
 
-        e = assertThrowsSuspend<IllegalArgumentException> {
+        e = assertThrows<IllegalArgumentException> {
             fileService.readFile("test", 0, MAX_FILE_CHUNK_SIZE + 1)
         }
         assertEquals("toRead must be less than $MAX_FILE_CHUNK_SIZE bytes", e.message)
@@ -473,7 +473,7 @@ class FileServiceTest {
     @Test
     fun `readFile cannot read dir`(): Unit = runBlocking {
         rootDir.resolve("testDir").createDirectory()
-        val e = assertThrowsSuspend<IOException> {
+        val e = assertThrows<IOException> {
             fileService.readFile("testDir", 0, 1)
         }
         assertEquals("Is a directory", e.message)
@@ -481,7 +481,7 @@ class FileServiceTest {
 
     @Test
     fun `readFile cannot unknown file`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.readFile("unknown", 0, 1)
         }
     }
@@ -489,7 +489,7 @@ class FileServiceTest {
     @Test
     fun `readFile cannot read parent files`(): Unit = runBlocking {
         val tmpFile = createTempFile("test")
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.readFile(tmpFile.relativeTo(rootDir).toString(), 0, 1)
         }
     }
@@ -513,7 +513,7 @@ class FileServiceTest {
 
     @Test
     fun `append should validate input params`(): Unit = runBlocking {
-        val e = assertThrowsSuspend<IllegalArgumentException> {
+        val e = assertThrows<IllegalArgumentException> {
             fileService.append("test", ByteArray(0))
         }
         assertEquals("data must not be empty", e.message)
@@ -522,7 +522,7 @@ class FileServiceTest {
     @Test
     fun `append should not append to dir`(): Unit = runBlocking {
         rootDir.resolve("testDir").createDirectory()
-        val e = assertThrowsSuspend<FileSystemException> {
+        val e = assertThrows<FileSystemException> {
             fileService.append("testDir", ByteArray(1))
         }
         assertEquals("Cannot append to directory", e.message)
@@ -530,7 +530,7 @@ class FileServiceTest {
 
     @Test
     fun `append should not append to unknown file`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.append("unknown", ByteArray(1))
         }
     }
@@ -538,7 +538,7 @@ class FileServiceTest {
     @Test
     fun `append should not append to parent files`(): Unit = runBlocking {
         val tmpFile = createTempFile("test")
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.append(tmpFile.relativeTo(rootDir).toString(), ByteArray(1))
         }
     }
@@ -572,12 +572,12 @@ class FileServiceTest {
 
     @Test
     fun `write should validate input params`(): Unit = runBlocking {
-        val e = assertThrowsSuspend<IllegalArgumentException> {
+        val e = assertThrows<IllegalArgumentException> {
             fileService.write("test", 0, ByteArray(0))
         }
         assertEquals("data must not be empty", e.message)
 
-        val e2 = assertThrowsSuspend<IllegalArgumentException> {
+        val e2 = assertThrows<IllegalArgumentException> {
             fileService.write("test", -1, ByteArray(1))
         }
         assertEquals("offset must be non-negative", e2.message)
@@ -586,7 +586,7 @@ class FileServiceTest {
     @Test
     fun `write should not write to dir`(): Unit = runBlocking {
         rootDir.resolve("testDir").createDirectory()
-        val e = assertThrowsSuspend<FileSystemException> {
+        val e = assertThrows<FileSystemException> {
             fileService.write("testDir", 0, ByteArray(1))
         }
         assertEquals("Cannot write to directory", e.message)
@@ -594,13 +594,13 @@ class FileServiceTest {
 
     @Test
     fun `write should not write to unknown file`(): Unit = runBlocking {
-        assertThrowsSuspend<NoSuchFileException> {
+        assertThrows<NoSuchFileException> {
             fileService.write("unknown", 0, ByteArray(1))
         }
     }
 }
 
-suspend inline fun <reified T : Throwable> assertThrowsSuspend(crossinline block: suspend () -> Unit): T {
+inline fun <reified T : Throwable> assertThrows(block: () -> Unit): T {
     try {
         block()
         return fail("Expected exception ${T::class} but nothing was thrown")
